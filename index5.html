@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CTET Pro - Exam Prep Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #3b82f6; /* Blue 500 */
+            --secondary-color: #14b8a6; /* Teal 500 */
+            --light-gray: #f8fafc; /* Slate 50 */
+            --medium-gray: #e2e8f0; /* Slate 200 */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--light-gray);
+            color: #1e293b; /* Slate 800 */
+        }
+        .view { display: none; }
+        .view.active { display: block; }
+
+        .gradient-text {
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .card {
+            background-color: white;
+            border-radius: 1rem; /* rounded-xl */
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.07), 0 4px 6px -4px rgba(0,0,0,0.07);
+        }
+        .progress-bar-bg { background-color: var(--medium-gray); }
+        .progress-bar-fill {
+            background-image: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            transition: width 0.5s ease-in-out;
+        }
+        .tab-btn {
+            transition: all 0.2s;
+            border-bottom: 3px solid transparent;
+            color: #64748b; /* Slate 500 */
+        }
+        .tab-btn.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+        .option-btn {
+            transition: all 0.2s ease-in-out;
+            border: 2px solid var(--medium-gray);
+            background-color: white;
+        }
+        .option-btn:hover {
+            border-color: var(--primary-color);
+            background-color: #eff6ff; /* Blue 50 */
+        }
+        .option-btn.selected { border-color: var(--primary-color); background-color: #dbeafe; /* Blue 200 */ }
+        .option-btn.correct { border-color: #10b981; background-color: #d1fae5; color: #065f46; animation: pulse-correct 0.5s ease-in-out; }
+        .option-btn.wrong { border-color: #ef4444; background-color: #fee2e2; color: #991b1b; animation: shake-wrong 0.5s ease-in-out; }
+        
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid var(--primary-color);
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        #theory-content-container h2, #theory-content-container h3 { 
+            font-size: 1.25rem; 
+            font-weight: 700; 
+            margin-top: 1.5rem; 
+            margin-bottom: 0.75rem; 
+            border-bottom: 1px solid var(--medium-gray); 
+            padding-bottom: 0.5rem;
+            color: #0f172a; /* Slate 900 */
+        }
+        #theory-content-container ul { list-style-type: disc; margin-left: 1.5rem; margin-bottom: 1rem; }
+        #theory-content-container strong { font-weight: 600; color: var(--primary-color); }
+        
+        .btn-primary {
+            background-image: linear-gradient(to right, var(--primary-color), #60a5fa); /* Blue 400 */
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px -3px rgba(59, 130, 246, 0.4);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px -3px rgba(59, 130, 246, 0.5);
+        }
+        .btn-secondary {
+            background-image: linear-gradient(to right, var(--secondary-color), #2dd4bf); /* Teal 400 */
+            color: white;
+            transition: all 0.3s ease;
+             box-shadow: 0 4px 15px -3px rgba(20, 184, 166, 0.4);
+        }
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px -3px rgba(20, 184, 166, 0.5);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes shake-wrong {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+
+        @keyframes pulse-correct {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.5); }
+            50% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(22, 163, 74, 0); }
+        }
+
+        /* Dark Mode Styles */
+        html.dark {
+            color-scheme: dark;
+        }
+        html.dark body {
+            background-color: #0f172a; /* slate-900 */
+            color: #cbd5e1; /* slate-300 */
+        }
+        html.dark .card {
+            background-color: #1e293b; /* slate-800 */
+            border: 1px solid #334155; /* slate-700 */
+        }
+        html.dark .gradient-text {
+             background: linear-gradient(to right, #60a5fa, #5eead4); /* blue-400, teal-300 */
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        html.dark h1, html.dark h2, html.dark h3 {
+            color: #f1f5f9; /* slate-100 */
+        }
+        html.dark .text-slate-600 { color: #94a3b8; /* slate-400 */ }
+        html.dark .text-slate-500 { color: #64748b; /* slate-500 */ }
+        html.dark .text-slate-800 { color: #e2e8f0; /* slate-200 */ }
+        html.dark .text-slate-900 { color: #f8fafc; /* slate-50 */ }
+        html.dark .border-slate-200 { border-color: #334155; /* slate-700 */ }
+        html.dark .bg-slate-50, html.dark .bg-slate-50\/50 { background-color: #0f172a; /* slate-900 */ }
+        html.dark .bg-slate-100 { background-color: #334155; /* slate-700 */ }
+        html.dark .bg-slate-200 { background-color: #334155; /* slate-700 */ }
+        html.dark .text-slate-700 { color: #d1d5db; /* gray-300 */ }
+        html.dark .tab-btn { color: #94a3b8; /* slate-400 */ }
+        html.dark .tab-btn.active { color: #60a5fa; border-bottom-color: #60a5fa; }
+        html.dark .option-btn { background-color: #334155; border-color: #475569; }
+        html.dark .option-btn:hover { background-color: #475569; border-color: #60a5fa; }
+        html.dark .option-btn.selected { background-color: #3b82f6; border-color: #60a5fa; }
+        html.dark .option-btn.correct { background-color: #052e16; border-color: #10b981; color: #a7f3d0; }
+        html.dark .option-btn.wrong { background-color: #450a0a; border-color: #ef4444; color: #fecaca; }
+        html.dark #quiz-timer { background-color: #e2e8f0; color: #1e293b; }
+        html.dark .bg-blue-50 { background-color: rgba(59, 130, 246, 0.1); }
+        html.dark .border-blue-200 { border-color: rgba(59, 130, 246, 0.3); }
+        html.dark .bg-teal-50 { background-color: rgba(20, 184, 166, 0.1); }
+        html.dark .border-teal-200 { border-color: rgba(20, 184, 166, 0.3); }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="fixed top-4 left-4 z-50">
+        <button id="global-home-btn" class="hidden bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm p-3 rounded-full shadow-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-700 dark:text-slate-200" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 011.085.12L10 12.364l3.66-4.193a1 1 0 011.086-.12l2.644-1.233a1 1 0 000-1.84l-7-3zM3 9.364l7 4.118 7-4.118V13.5A2.5 2.5 0 0114.5 16h-9A2.5 2.5 0 013 13.5V9.364z" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Main Container -->
+    <div id="app" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- Landing View -->
+        <div id="landing-view" class="view active">
+            <header class="text-center py-16 relative">
+                 <div class="absolute top-4 right-4 flex items-center gap-3">
+                    <button id="theme-toggle-btn" class="p-2 rounded-full bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors shadow-sm">
+                        <svg id="theme-icon-sun" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                         <svg id="theme-icon-moon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                    </button>
+                    <button id="exam-format-btn" class="bg-white text-blue-500 font-semibold py-2 px-5 border border-blue-200 rounded-full hover:bg-blue-50 transition-colors shadow-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-600">
+                        Exam Format
+                    </button>
+                </div>
+                <h1 class="text-4xl md:text-6xl font-extrabold mb-4 tracking-tight">
+                    Welcome to <span class="gradient-text">CTET Pro</span>
+                </h1>
+                <p class="text-lg md:text-xl text-slate-600 max-w-3xl mx-auto">
+                    Your complete platform for CTET exam success. Choose your paper to begin your personalized learning journey.
+                </p>
+            </header>
+
+            <div class="max-w-2xl mx-auto text-center mb-10">
+                 <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-lg text-slate-800 mb-2">Quote of the Moment</h3>
+                    <p id="motivational-quote" class="text-teal-600 font-medium text-lg italic">"Loading quote..."</p>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mt-10">
+                <button data-paper="1" class="paper-select-btn card p-10 text-center cursor-pointer">
+                    <h2 class="text-3xl md:text-4xl font-bold text-blue-500 mb-2">Paper I</h2>
+                    <p class="text-slate-500 font-medium">(for Classes I to V)</p>
+                </button>
+                <button data-paper="2" class="paper-select-btn card p-10 text-center cursor-pointer">
+                    <h2 class="text-3xl md:text-4xl font-bold text-teal-500 mb-2">Paper II</h2>
+                    <p class="text-slate-500 font-medium">(for Classes VI to VIII)</p>
+                </button>
+            </div>
+
+            <div class="max-w-4xl mx-auto mt-16 pt-10 border-t border-slate-200">
+                <h2 class="text-3xl font-bold text-center mb-8 text-slate-800">Full-Length Mock Exams</h2>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <button data-paper="1" class="full-exam-btn card p-8 text-center cursor-pointer bg-blue-50 border-2 border-blue-200 hover:border-blue-400">
+                        <h3 class="text-2xl font-bold text-blue-600">Start Full Exam (Paper I)</h3>
+                        <p class="text-slate-500 mt-2">150 Questions, 150 Minutes</p>
+                    </button>
+                    <button data-paper="2" class="full-exam-btn card p-8 text-center cursor-pointer bg-teal-50 border-2 border-teal-200 hover:border-teal-400">
+                        <h3 class="text-2xl font-bold text-teal-600">Start Full Exam (Paper II)</h3>
+                         <p class="text-slate-500 mt-2">150 Questions, 150 Minutes</p>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Roadmap View -->
+        <div id="roadmap-view" class="view">
+            <header class="flex flex-wrap justify-between items-center mb-10 gap-4">
+                <div>
+                    <h1 id="roadmap-title" class="text-4xl font-bold tracking-tight"></h1>
+                    <p class="text-slate-500 mt-1">Your subject-wise study roadmap</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button id="back-to-landing-btn" class="text-sm font-medium text-blue-600 hover:underline">Change Paper</button>
+                    
+                </div>
+            </header>
+            <div id="subject-cards-container" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Subject cards will be injected here -->
+            </div>
+        </div>
+
+        <!-- Subject View -->
+        <div id="subject-view" class="view">
+            <header class="mb-8">
+                 <div class="flex flex-wrap justify-between items-center mb-4 gap-4">
+                    <h1 id="subject-title" class="text-4xl font-bold tracking-tight"></h1>
+                     <div class="flex items-center gap-4">
+                        <button id="back-to-roadmap-btn" class="text-sm font-medium text-blue-600 hover:underline">Back to Roadmap</button>
+                         
+                    </div>
+                </div>
+            </header>
+            <div class="card">
+                <div class="border-b border-slate-200">
+                    <nav id="subject-tabs" class="flex space-x-6 px-8 overflow-x-auto">
+                        <button data-tab="theory" class="tab-btn active py-4 px-1 font-semibold whitespace-nowrap">Theory Roadmap</button>
+                        <button data-tab="mock" class="tab-btn py-4 px-1 font-semibold whitespace-nowrap">Mock Test</button>
+                    </nav>
+                </div>
+                <div id="subject-tab-content" class="p-6 md:p-8">
+                    <!-- Tab content will be injected here -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quiz View -->
+        <div id="quiz-view" class="view">
+            <div class="max-w-4xl mx-auto card">
+                <div id="quiz-header" class="p-5 flex justify-between items-center border-b border-slate-200">
+                    <h2 id="quiz-title" class="text-xl font-bold text-slate-800"></h2>
+                    <div class="flex items-center space-x-4">
+                        <div id="quiz-timer" class="text-lg font-mono font-semibold bg-slate-800 text-white rounded-md px-3 py-1 shadow-inner">00:00</div>
+                        <div id="quiz-score" class="text-lg font-bold text-blue-600">Score: 0</div>
+                    </div>
+                </div>
+                <div id="quiz-body" class="p-6 md:p-8">
+                     <div id="question-counter" class="text-right text-sm font-medium text-slate-500 mb-2"></div>
+                     <p id="question-text" class="text-xl font-semibold mb-8 text-slate-900"></p>
+                     <div id="options-container" class="space-y-4"></div>
+                </div>
+                <div id="quiz-feedback" class="p-6 md:p-8 border-t border-slate-200 bg-slate-50 hidden rounded-b-xl">
+                    <h3 class="font-bold mb-2 text-slate-800">Explanation:</h3>
+                    <p id="explanation-text" class="text-slate-600"></p>
+                </div>
+                <div class="p-5 bg-slate-50/50 rounded-b-xl flex justify-between items-center">
+                    <button id="quit-quiz-btn" class="bg-slate-200 text-slate-700 font-semibold py-2 px-5 rounded-lg hover:bg-slate-300 transition-colors">Quit</button>
+                    <button id="next-question-btn" class="btn-primary font-semibold py-2 px-8 rounded-lg disabled:bg-slate-400 disabled:shadow-none disabled:transform-none">Next</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results View -->
+        <div id="results-view" class="view">
+            <div class="max-w-2xl mx-auto text-center card p-8 md:p-12">
+                <h1 class="text-4xl font-extrabold mb-2 tracking-tight">Quiz Complete!</h1>
+                <p class="text-slate-500 mb-8">Here's how you performed.</p>
+                
+                <div class="grid grid-cols-3 gap-4 my-10">
+                    <div>
+                        <p class="text-sm text-slate-500">Score</p>
+                        <p id="result-score" class="text-5xl font-extrabold gradient-text"></p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-500">Accuracy</p>
+                        <p id="result-accuracy" class="text-5xl font-extrabold text-slate-800"></p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-500">Time Taken</p>
+                        <p id="result-time" class="text-5xl font-extrabold text-slate-800"></p>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col gap-4 mb-6">
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <button id="retake-same-quiz-btn" class="w-full btn-primary font-bold py-3 rounded-lg">Retake Same Quiz</button>
+                        <button id="generate-new-quiz-btn" class="w-full btn-secondary font-bold py-3 rounded-lg">Generate New Quiz</button>
+                    </div>
+                    <button id="download-results-btn" class="w-full bg-slate-700 text-white font-bold py-3 rounded-lg hover:bg-slate-800 transition-colors">Download PDF</button>
+                </div>
+
+                <button id="back-to-subject-btn" class="w-full bg-slate-200 text-slate-800 font-bold py-3 rounded-lg hover:bg-slate-300 transition-colors">
+                    Back to Subject or Home
+                </button>
+            </div>
+        </div>
+
+        <!-- Exam Format View -->
+        <div id="exam-format-view" class="view">
+             <div class="max-w-4xl mx-auto card p-6 md:p-8 my-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold gradient-text">CTET Exam Format</h1>
+                    <button id="close-format-btn" class="text-3xl font-bold text-slate-400 hover:text-slate-800 transition-colors">&times;</button>
+                </div>
+                
+                <div class="space-y-10">
+                    <div>
+                        <h2 class="text-2xl font-bold text-blue-600 mb-4 pb-2 border-b-2 border-blue-200">Paper I (for Classes I to V)</h2>
+                        <ul class="list-disc list-inside space-y-2 text-slate-700 mb-4">
+                            <li><strong>Duration:</strong> 2.5 hours (150 minutes)</li>
+                            <li><strong>Total Questions:</strong> 150 MCQs</li>
+                            <li><strong>Total Marks:</strong> 150</li>
+                            <li><strong>Marking Scheme:</strong> +1 for correct, 0 for incorrect (No negative marking)</li>
+                        </ul>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-slate-100">
+                                    <tr>
+                                        <th class="p-3 font-bold uppercase text-slate-600 border border-slate-300">Subject</th>
+                                        <th class="p-3 font-bold uppercase text-slate-600 border border-slate-300 text-center">Questions</th>
+                                        <th class="p-3 font-bold uppercase text-slate-600 border border-slate-300 text-center">Marks</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="hover:bg-slate-50"><td class="p-3 border border-slate-300">Child Development & Pedagogy</td><td class="p-3 border border-slate-300 text-center">30</td><td class="p-3 border border-slate-300 text-center">30</td></tr>
+                                    <tr class="hover:bg-slate-50"><td class="p-3 border border-slate-300">Language I (compulsory)</td><td class="p-3 border border-slate-300 text-center">30</td><td class="p-3 border border-slate-300 text-center">30</td></tr>
+                                    <tr class="hover:bg-slate-50"><td class="p-3 border border-slate-300">Language II (compulsory)</td><td class="p-3 border border-slate-300 text-center">30</td><td class="p-3 border border-slate-300 text-center">30</td></tr>
+                                     <tr class="hover:bg-slate-50"><td class="p-3 border border-slate-300">Mathematics</td><td class="p-3 border border-slate-300 text-center">30</td><td class="p-3 border border-slate-300 text-center">30</td></tr>
+                                     <tr class="hover:bg-slate-50"><td class="p-3 border border-slate-300">Environmental Studies</td><td class="p-3 border border-slate-300 text-center">30</td><td class="p-3 border border-slate-300 text-center">30</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h2 class="text-2xl font-bold text-teal-600 mb-4 pb-2 border-b-2 border-teal-200">Paper II (for Classes VI to VIII)</h2>
+                        <ul class="list-disc list-inside space-y-2 text-slate-700 mb-4">
+                            <li><strong>Duration:</strong> 2.5 hours (150 minutes)</li>
+                            <li><strong>Total Questions:</strong> 150 MCQs</li>
+                            <li><strong>Total Marks:</strong> 150</li>
+                            <li><strong>Marking Scheme:</strong> +1 for correct, 0 for incorrect (No negative marking)</li>
+                        </ul>
+                         <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-slate-100">
+                                    <tr>
+                                        <th class="p-3 font-bold uppercase text-slate-600 border border-slate-300">Subject</th>
+                                        <th class="p-3 font-bold uppercase text-slate-600 border border-slate-300 text-center">Questions</th>
+                                        <th class="p-3 font-bold uppercase text-slate-600 border border-slate-300 text-center">Marks</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="hover:bg-slate-50"><td class="p-3 border border-slate-300">Child Development & Pedagogy</td><td class="p-3 border border-slate-300 text-center">30</td><td class="p-3 border border-slate-300 text-center">30</td></tr>
+                                    <tr class="hover:bg-slate-50"><td class="p-3 border border-slate-300">Language I (compulsory)</td><td class="p-3 border border-slate-300 text-center">30</td><td class="p-3 border border-slate-300 text-center">30</td></tr>
+                                    <tr class="hover:bg-slate-50"><td class="p-3 border border-slate-300">Language II (compulsory)</td><td class="p-3 border border-slate-300 text-center">30</td><td class="p-3 border border-slate-300 text-center">30</td></tr>
+                                     <tr class="hover:bg-slate-50"><td class="p-3 border border-slate-300">Mathematics & Science (for Math/Science teachers)</td><td class="p-3 border border-slate-300 text-center">60</td><td class="p-3 border border-slate-300 text-center">60</td></tr>
+                                     <tr class="hover:bg-slate-50"><td class="p-3 border border-slate-300">Social Studies/Social Science (for SST teachers)</td><td class="p-3 border border-slate-300 text-center">60</td><td class="p-3 border border-slate-300 text-center">60</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loader View -->
+        <div id="loader-view" class="view">
+            <div class="fixed inset-0 bg-white/80 backdrop-blur-sm dark:bg-slate-900/80 flex flex-col justify-center items-center z-50">
+                <div class="loader"></div>
+                <p id="loader-text" class="mt-4 text-lg font-medium text-slate-700 dark:text-slate-300"></p>
+            </div>
+        </div>
+
+        <!-- Paper 2 Stream Choice Modal -->
+        <div id="paper2-stream-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+            <div class="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-2xl max-w-md w-full text-center">
+                <h2 class="text-2xl font-bold mb-4 text-slate-900 dark:text-slate-100">Select Stream for Paper II</h2>
+                <p class="text-slate-600 dark:text-slate-400 mb-8">Choose the subject stream for your full-length exam.</p>
+                <div class="flex flex-col gap-4">
+                    <button data-stream="math_sci" class="stream-choice-btn btn-primary font-bold py-3 px-6 rounded-lg">Mathematics & Science</button>
+                    <button data-stream="sst" class="stream-choice-btn btn-secondary font-bold py-3 px-6 rounded-lg">Social Studies/Science</button>
+                </div>
+                 <button id="close-modal-btn" class="mt-6 text-sm text-slate-500 hover:underline">Cancel</button>
+            </div>
+        </div>
+        
+        <!-- Quit Confirmation Modal -->
+        <div id="quit-confirm-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+            <div class="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-2xl max-w-md w-full text-center">
+                <h2 class="text-2xl font-bold mb-4 text-slate-900 dark:text-slate-100">Are you sure?</h2>
+                <p class="text-slate-600 dark:text-slate-400 mb-8">Your quiz progress will be lost if you quit.</p>
+                <div class="flex gap-4">
+                    <button id="cancel-quit-btn" class="flex-1 bg-slate-200 dark:bg-slate-600 text-slate-800 dark:text-slate-200 font-bold py-3 px-6 rounded-lg">Cancel</button>
+                    <button id="confirm-quit-btn" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg">Quit</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    
+    <footer class="text-center py-8 text-slate-500 text-sm">
+        <p>&copy; 2024 CTET Pro. All rights reserved. Designed by DeeCode.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- CONFIG & STATE ---
+            const API_KEY = 'AIzaSyDPhkyJBkrkcnjzu07X71bjs5nqWvMgaQ0';
+            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${API_KEY}`;
+            
+            const appState = {
+                currentView: 'landing-view',
+                previousView: 'landing-view',
+                selectedPaper: null,
+                selectedSubject: null,
+                quiz: {
+                    type: null, // 'topic-practice', 'mock', or 'full-exam'
+                    topic: null,
+                    questions: [],
+                    currentQIndex: 0,
+                    score: 0,
+                    timerInterval: null,
+                    startTime: 0,
+                    totalTime: 0,
+                    paperId: null, // For full-exam retakes
+                    stream: null // For Paper 2 full-exam retakes
+                },
+                progress: JSON.parse(localStorage.getItem('ctetProProgress')) || {},
+                audioContext: null
+            };
+            
+            const motivationalQuotes = [
+                "Believe you can and you're halfway there.",
+                "The future belongs to those who believe in the beauty of their dreams.",
+                "Success is not final, failure is not fatal: it is the courage to continue that counts.",
+                "The secret of getting ahead is getting started.",
+                "Don't watch the clock; do what it does. Keep going.",
+                "The expert in anything was once a beginner.",
+                "Strive for progress, not perfection.",
+                "You are capable of more than you know."
+            ];
+
+            const examData = {
+                1: {
+                    name: "Paper I (Classes I-V)",
+                    subjects: [
+                        { id: "cdp", name: "Child Development & Pedagogy", questions: 30, roadmap: [
+                            { type: 'header', title: 'Core Concepts' },
+                            { type: 'topic', title: 'Concept of Development & its relationship with learning' },
+                            { type: 'topic', title: 'Principles of the Development of Children' },
+                            { type: 'topic', title: 'Influence of Heredity & Environment' },
+                            { type: 'topic', title: 'Socialization processes' },
+                            { type: 'topic', title: 'Piaget, Kohlberg and Vygotsky: constructs and critical perspectives' },
+                            { type: 'topic', title: 'Concepts of child-centered and progressive education' },
+                            { type: 'topic', title: 'Critical perspective of the construct of Intelligence' },
+                            { type: 'topic', title: 'Multi-Dimensional Intelligence' },
+                            { type: 'topic', title: 'Language & Thought' },
+                            { type: 'header', title: 'Inclusive Education & Pedagogy' },
+                            { type: 'topic', title: 'Addressing learners from diverse backgrounds' },
+                            { type: 'topic', title: 'Addressing the needs of children with learning difficulties, impairment etc.' },
+                            { type: 'topic', title: 'Addressing the Talented, Creative, Specially abled Learners' },
+                            { type: 'topic', title: 'Basic processes of teaching and learning' },
+                            { type: 'topic', title: 'Child as a problem solver and a ‘scientific investigator’' },
+                            { type: 'topic', title: 'Cognition & Emotions' },
+                            { type: 'topic', title: 'Motivation and learning' },
+                        ]},
+                        { id: "lang1", name: "Language I", questions: 30, roadmap: [
+                            { type: 'header', title: 'Pedagogy of Language Development' },
+                            { type: 'topic', title: 'Learning and acquisition' },
+                            { type: 'topic', title: 'Principles of language Teaching' },
+                            { type: 'topic', title: 'Role of listening and speaking; function of language' },
+                            { type: 'topic', title: 'Critical perspective on the role of grammar in learning a language' },
+                            { type: 'topic', title: 'Challenges of teaching language in a diverse classroom' },
+                            { type: 'topic', title: 'Language Skills: LSRW' },
+                            { type: 'topic', title: 'Evaluating language comprehension and proficiency' },
+                            { type: 'topic', title: 'Teaching-learning materials: Textbook, multi-media materials' },
+                            { type: 'topic', title: 'Remedial Teaching' },
+                        ]},
+                        { id: "lang2", name: "Language II", questions: 30, roadmap: [
+                            { type: 'header', title: 'Pedagogy and Skills' },
+                            { type: 'topic', title: 'Language Acquisition vs. Language Learning' },
+                            { type: 'topic', title: 'Methods of Language Teaching' },
+                            { type: 'topic', title: 'Developing Vocabulary and Structure' },
+                            { type: 'topic', title: 'Assessment in Language Classroom' },
+                            { type: 'topic', title: 'Use of authentic materials' },
+                        ]},
+                        { id: "math", name: "Mathematics", questions: 30, roadmap: [
+                            { type: 'header', title: 'Content Areas' },
+                            { type: 'topic', title: 'Numbers, Shapes & Spatial Understanding' },
+                            { type: 'topic', title: 'Solids around Us & Number Operations (Addition, Subtraction, Multiplication, Division)' },
+                            { type: 'topic', title: 'Measurement, Weight, Time, Volume' },
+                            { type: 'topic', title: 'Data Handling & Patterns' },
+                            { type: 'header', title: 'Pedagogical Issues' },
+                            { type: 'topic', title: 'Nature of Mathematics/Logical thinking' },
+                            { type: 'topic', title: 'Place of Mathematics in Curriculum' },
+                            { type: 'topic', title: 'Language of Mathematics' },
+                            { type: 'topic', title: 'Community Mathematics' },
+                            { type: 'topic', title: 'Evaluation through formal and informal methods' },
+                            { type: 'topic', title: 'Problems of Teaching' },
+                            { type: 'topic', title: 'Error analysis and related aspects of learning and teaching' },
+                            { type: 'topic', title: 'Diagnostic and Remedial Teaching' },
+                        ]},
+                        { id: "evs", name: "Environmental Studies", questions: 30, roadmap: [
+                            { type: 'header', title: 'Content Areas (Based on 6 Themes)' },
+                            { type: 'topic', title: 'Theme 1: Family and Friends (Relationships, Work and Play, Animals, Plants)' },
+                            { type: 'topic', title: 'Theme 2: Food' },
+                            { type: 'topic', title: 'Theme 3: Shelter' },
+                            { type: 'topic', title: 'Theme 4: Water' },
+                            { type: 'topic', title: 'Theme 5: Travel' },
+                            { type: 'topic', title: 'Theme 6: Things We Make and Do' },
+                            { type: 'header', title: 'Pedagogical Issues' },
+                            { type: 'topic', title: 'Concept and scope of EVS' },
+                            { type: 'topic', title: 'Significance of EVS, integrated EVS' },
+                            { type: 'topic', title: 'Environmental Studies & Environmental Education' },
+                            { type: 'topic', title: 'Learning Principles' },
+                            { type: 'topic', title: 'Scope & relation to Science & Social Science' },
+                            { type: 'topic', title: 'Activities, Experimentation/Practical Work, Discussion' },
+                            { type: 'topic', title: 'CCE (Continuous and Comprehensive Evaluation)' },
+                            { type: 'topic', title: 'Teaching material/Aids & Problems' },
+                        ]},
+                    ]
+                },
+                2: {
+                    name: "Paper II (Classes VI-VIII)",
+                    subjects: [
+                         { id: "cdp", name: "Child Development & Pedagogy", questions: 30, roadmap: [
+                            { type: 'header', title: 'Core Concepts' },
+                            { type: 'topic', title: 'Concept of Development (Elementary School Child)' },
+                            { type: 'topic', title: 'Principles of Growth and Development' },
+                            { type: 'topic', title: 'Piaget, Kohlberg, Vygotsky: Advanced Concepts' },
+                            { type: 'topic', title: 'Child-Centered vs Progressive Education' },
+                            { type: 'topic', title: 'Howard Gardner\'s theory of Multiple Intelligences' },
+                            { type: 'topic', title: 'Gender as a social construct; gender roles, gender-bias' },
+                            { type: 'topic', title: 'Formulating appropriate questions for assessing readiness levels of learners' },
+                            { type: 'topic', title: 'Assessment for learning vs. Assessment of learning' },
+                            { type: 'topic', title: 'School-Based Assessment, Continuous & Comprehensive Evaluation' },
+                        ]},
+                        { id: "lang1", name: "Language I", questions: 30, roadmap: [
+                            { type: 'header', title: 'Pedagogy of Language Development' },
+                            { type: 'topic', title: 'Principles of Language Teaching in middle school' },
+                            { type: 'topic', title: 'Role of Grammar in context' },
+                            { type: 'topic', title: 'Challenges of multilingual classrooms' },
+                            { type: 'topic', title: 'Evaluating language proficiency and comprehension' },
+                            { type: 'topic', title: 'Use of ICT and multimedia in language teaching' },
+                        ]},
+                         { id: "lang2", name: "Language II", questions: 30, roadmap: [
+                            { type: 'header', title: 'Pedagogy and Skills' },
+                            { type: 'topic', title: 'Advanced Comprehension Skills (Literary, Narrative, Scientific)' },
+                            { type: 'topic', title: 'Principles of Second Language Acquisition' },
+                            { type: 'topic', title: 'Developing structural and vocabulary knowledge' },
+                            { type: 'topic', title: 'Advanced assessment methods for language' },
+                        ]},
+                        { id: "math_sci", name: "Mathematics & Science", questions: 60, roadmap: [
+                            { type: 'header', title: 'Mathematics Content' },
+                            { type: 'topic', title: 'Number System, Algebra, Ratio and Proportion' },
+                            { type: 'topic', title: 'Geometry (Basic Geometrical Ideas, Constructions)' },
+                            { type: 'topic', title: 'Mensuration and Data Handling' },
+                            { type: 'header', title: 'Science Content' },
+                            { type: 'topic', title: 'Food (Components, Cleaning), Materials (of Daily Use)' },
+                            { type: 'topic', title: 'The World of the Living (Microorganisms, Cell structure)' },
+                            { type: 'topic', title: 'Moving Things, People and Ideas (Force, Friction, Light, Sound)' },
+                            { type: 'topic', title: 'How things work (Electric Current and Circuits, Magnets)' },
+                            { type: 'topic', title: 'Natural Phenomena and Natural Resources' },
+                            { type: 'header', title: 'Pedagogical Issues' },
+                            { type: 'topic', title: 'Nature of Mathematical/Scientific Thinking' },
+                            { type: 'topic', title: 'Aims of Teaching Science and Mathematics' },
+                            { type: 'topic', title: 'Approaches: Inductive-Deductive, Problem Solving, Project Method' },
+                            { type: 'topic', title: 'Evaluation in Science and Math' },
+                            { type: 'topic', title: 'Remedial Teaching for Science and Math' },
+                        ]},
+                        { id: "sst", name: "Social Studies/Science", questions: 60, roadmap: [
+                            { type: 'header', title: 'History Content' },
+                            { type: 'topic', title: 'Ancient India: First Cities, New Ideas, First Empire' },
+                            { type: 'topic', title: 'Medieval India: Sultans of Delhi, Mughal Empire, Architecture' },
+                            { type: 'topic', title: 'Modern India: From Trade to Territory, The Revolt of 1857-58, Women and Reform' },
+                            { type: 'header', title: 'Geography Content' },
+                            { type: 'topic', title: 'Geography as a social study and as a science' },
+                            { type: 'topic', title: 'Planet: Earth in the solar system, Globe' },
+                            { type: 'topic', title: 'Environment in its totality: natural and human environment' },
+                            { type: 'topic', title: 'Air, Water, Human Environment: settlement, transport and communication' },
+                            { type: 'topic', title: 'Resources: Types-Natural and Human' },
+                            { type: 'topic', title: 'Agriculture' },
+                             { type: 'header', title: 'Social and Political Life (Civics) Content' },
+                            { type: 'topic', title: 'Diversity, Government, Local Government' },
+                            { type: 'topic', title: 'Making a Living, Democracy, State Government' },
+                            { type: 'topic', title: 'Understanding Media, Unpacking Gender' },
+                            { type: 'topic', title: 'The Constitution, Parliamentary Government, The Judiciary' },
+                             { type: 'header', title: 'Pedagogical Issues' },
+                            { type: 'topic', title: 'Concept & Nature of Social Science/Social Studies' },
+                            { type: 'topic', title: 'Class Room Processes, activities and discourse' },
+                            { type: 'topic', title: 'Developing Critical thinking' },
+                            { type: 'topic', title: 'Enquiry/Empirical Evidence' },
+                            { type: 'topic', title: 'Problems of teaching Social Science/Social Studies' },
+                            { type: 'topic', title: 'Projects Work & Evaluation' },
+                        ]},
+                    ]
+                }
+            };
+            
+            const views = document.querySelectorAll('.view');
+            
+            init();
+
+            function init() {
+                addEventListeners();
+                initQuoteRotator();
+                initTheme();
+                showView('landing-view');
+            }
+            
+            function initAudio() {
+                if (!appState.audioContext) {
+                    try {
+                        appState.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    } catch (e) {
+                        console.error("Web Audio API is not supported in this browser");
+                    }
+                }
+            }
+            
+            function playSound(type) {
+                if (!appState.audioContext) return;
+                
+                const oscillator = appState.audioContext.createOscillator();
+                const gainNode = appState.audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(appState.audioContext.destination);
+
+                gainNode.gain.setValueAtTime(0, appState.audioContext.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.4, appState.audioContext.currentTime + 0.01);
+                
+                if (type === 'correct') {
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(600, appState.audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(800, appState.audioContext.currentTime + 0.1);
+                } else { // wrong
+                    oscillator.type = 'triangle';
+                    oscillator.frequency.setValueAtTime(200, appState.audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(120, appState.audioContext.currentTime + 0.15);
+                }
+
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, appState.audioContext.currentTime + 0.2);
+                oscillator.start(appState.audioContext.currentTime);
+                oscillator.stop(appState.audioContext.currentTime + 0.2);
+            }
+            
+            const handleBeforeUnload = (e) => {
+                e.preventDefault();
+                e.returnValue = '';
+            };
+
+            function addEventListeners() {
+                document.body.addEventListener('click', initAudio, { once: true });
+            
+                document.querySelectorAll('.paper-select-btn').forEach(btn => btn.addEventListener('click', handlePaperSelect));
+                document.querySelectorAll('.full-exam-btn').forEach(btn => btn.addEventListener('click', handleFullExamClick));
+                document.getElementById('global-home-btn').addEventListener('click', () => showView('landing-view'));
+                document.getElementById('theme-toggle-btn').addEventListener('click', toggleTheme);
+                document.getElementById('exam-format-btn').addEventListener('click', () => showView('exam-format-view'));
+                document.getElementById('close-format-btn').addEventListener('click', () => showView(appState.previousView || 'landing-view'));
+                document.getElementById('back-to-landing-btn').addEventListener('click', () => showView('landing-view'));
+                document.getElementById('back-to-roadmap-btn').addEventListener('click', () => showView('roadmap-view', {paper: appState.selectedPaper}));
+                document.getElementById('subject-tabs').addEventListener('click', handleTabClick);
+                document.getElementById('options-container').addEventListener('click', handleOptionSelect);
+                document.getElementById('next-question-btn').addEventListener('click', handleNextQuestion);
+                document.getElementById('quit-quiz-btn').addEventListener('click', handleQuitQuiz);
+                document.getElementById('back-to-subject-btn').addEventListener('click', () => {
+                    if (appState.quiz.type === 'full-exam') {
+                        showView('landing-view');
+                    } else {
+                        showView('subject-view', { subjectId: appState.selectedSubject.id });
+                    }
+                });
+
+                // Modal listeners
+                document.querySelectorAll('.stream-choice-btn').forEach(btn => btn.addEventListener('click', handleStreamChoice));
+                document.getElementById('close-modal-btn').addEventListener('click', () => {
+                    document.getElementById('paper2-stream-modal').classList.add('hidden');
+                    document.getElementById('paper2-stream-modal').classList.remove('flex');
+                });
+                
+                // Quit Modal Listeners
+                const quitModal = document.getElementById('quit-confirm-modal');
+                document.getElementById('confirm-quit-btn').addEventListener('click', () => {
+                    quitModal.classList.add('hidden');
+                    quitModal.classList.remove('flex');
+                    endQuiz(true);
+                });
+                document.getElementById('cancel-quit-btn').addEventListener('click', () => {
+                    quitModal.classList.add('hidden');
+                    quitModal.classList.remove('flex');
+                });
+            }
+            
+            function initQuoteRotator() {
+                const quoteEl = document.getElementById('motivational-quote');
+                if(!quoteEl) return;
+                
+                const setQuote = () => {
+                    const randomIndex = Math.floor(Math.random() * motivationalQuotes.length);
+                    quoteEl.textContent = `"${motivationalQuotes[randomIndex]}"`;
+                }
+                
+                setQuote();
+                setInterval(setQuote, 30000);
+            }
+
+            function initTheme() {
+                if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.classList.add('dark');
+                    document.getElementById('theme-icon-sun').classList.add('hidden');
+                    document.getElementById('theme-icon-moon').classList.remove('hidden');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    document.getElementById('theme-icon-sun').classList.remove('hidden');
+                    document.getElementById('theme-icon-moon').classList.add('hidden');
+                }
+            }
+
+            function toggleTheme() {
+                if (document.documentElement.classList.contains('dark')) {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.theme = 'light';
+                } else {
+                    document.documentElement.classList.add('dark');
+                    localStorage.theme = 'dark';
+                }
+                initTheme();
+            }
+            
+            function showView(viewId, params = {}) {
+                views.forEach(v => v.classList.remove('active'));
+                const view = document.getElementById(viewId);
+                if (view) {
+                    appState.previousView = appState.currentView;
+                    view.classList.add('active');
+                    appState.currentView = viewId;
+                    window.scrollTo(0, 0);
+
+                    // Toggle global home button visibility
+                    document.getElementById('global-home-btn').classList.toggle('hidden', viewId === 'landing-view');
+                    
+                    switch(viewId) {
+                        case 'roadmap-view': renderRoadmap(params.paper); break;
+                        case 'subject-view': renderSubjectView(params.subjectId); break;
+                        case 'loader-view': 
+                            document.getElementById('loader-text').textContent = params.text || "Loading...";
+                            break;
+                    }
+                }
+            }
+
+            function handlePaperSelect(e) {
+                const paperId = e.currentTarget.dataset.paper;
+                appState.selectedPaper = examData[paperId];
+                appState.selectedPaper.id = paperId;
+                showView('roadmap-view', { paper: appState.selectedPaper });
+            }
+            
+            function handleSubjectSelect(e) {
+                const subjectId = e.currentTarget.dataset.subjectId;
+                showView('subject-view', { subjectId });
+            }
+
+            function handleTabClick(e) {
+                if (e.target.tagName !== 'BUTTON') return;
+                const tab = e.target.dataset.tab;
+                document.querySelectorAll('#subject-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                renderTabContent(tab);
+            }
+            
+            async function handleStartQuiz(type) {
+                const subject = appState.selectedSubject;
+                let numQuestions = 30; // Mock test is now 30 questions
+
+                const prompt = `Generate ${numQuestions} multiple-choice questions for the CTET ${appState.selectedPaper.name} exam on the subject "${subject.name}". Provide the response as a valid JSON array where each object has "question" (string), "options" (an array of 4 strings), "answer" (the 0-indexed integer of the correct option), and "explanation" (a brief string). Do not include any text outside the JSON array.`;
+
+                showView('loader-view', { text: `Generating your mock quiz...` });
+                
+                try {
+                    const responseText = await fetchGeminiContent(prompt);
+                    const questions = JSON.parse(responseText).map(q => ({...q, userAnswer: null}));
+                    
+                    appState.quiz = { type, questions, currentQIndex: 0, score: 0, timerInterval: null, startTime: Date.now() };
+                    showView('quiz-view');
+                    renderQuiz();
+                } catch (error) {
+                    console.error("Quiz generation failed:", error);
+                    alert("Failed to generate the quiz. Please try again.");
+                    showView('subject-view', { subjectId: subject.id });
+                }
+            }
+            
+            async function handleStartFullExam(paperId, stream = null) {
+                let subjectsToFetch = [];
+
+                if (paperId === '1') {
+                    subjectsToFetch = [
+                        { name: "Child Development & Pedagogy for CTET Paper 1", count: 30 },
+                        { name: "Language I for CTET Paper 1", count: 30 },
+                        { name: "Language II for CTET Paper 1", count: 30 },
+                        { name: "Mathematics for CTET Paper 1", count: 30 },
+                        { name: "Environmental Studies for CTET Paper 1", count: 30 }
+                    ];
+                } else if (paperId === '2' && stream) {
+                    subjectsToFetch = [
+                        { name: "Child Development & Pedagogy for CTET Paper 2", count: 30 },
+                        { name: "Language I for CTET Paper 2", count: 30 },
+                        { name: "Language II for CTET Paper 2", count: 30 },
+                    ];
+                    if (stream === 'math_sci') {
+                        subjectsToFetch.push({ name: 'Mathematics for CTET Paper 2 classes VI-VIII', count: 30 });
+                        subjectsToFetch.push({ name: 'Science for CTET Paper 2 classes VI-VIII', count: 30 });
+                    } else { // sst
+                        subjectsToFetch.push({ name: 'History for CTET Paper 2 classes VI-VIII', count: 20 });
+                        subjectsToFetch.push({ name: 'Geography for CTET Paper 2 classes VI-VIII', count: 20 });
+                        subjectsToFetch.push({ name: 'Social and Political Life (Civics) for CTET Paper 2 classes VI-VIII', count: 20 });
+                    }
+                } else {
+                    return; // Should not happen
+                }
+                
+                showView('loader-view', { text: 'Generating your full-length exam... This may take a moment.' });
+
+                try {
+                    const promises = subjectsToFetch.map(subject => {
+                        const subjectPrompt = `Generate exactly ${subject.count} multiple-choice questions for the CTET exam on the subject "${subject.name}". Provide the response as a valid JSON array of question objects. Each object must have "question", "options" (array of 4), "answer" (0-indexed integer), and "explanation". Do not include any text outside the JSON array.`;
+                        return fetchGeminiContent(subjectPrompt).then(JSON.parse);
+                    });
+                    
+                    const questionArrays = await Promise.all(promises);
+                    let allQuestions = questionArrays.flat();
+                    
+                    // Shuffle the final array of questions
+                    for (let i = allQuestions.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [allQuestions[i], allQuestions[j]] = [allQuestions[j], allQuestions[i]];
+                    }
+
+                    if (allQuestions.length > 0 && allQuestions.length < 150) {
+                        console.warn(`Generated ${allQuestions.length} questions instead of 150. The quiz will proceed with the available questions.`);
+                    } else if (allQuestions.length === 0) {
+                        throw new Error("API failed to generate any questions.");
+                    }
+                    
+                    appState.quiz = { 
+                        type: 'full-exam',
+                        paperId: paperId,
+                        stream: stream,
+                        questions: allQuestions.map(q => ({...q, userAnswer: null})),
+                        currentQIndex: 0, 
+                        score: 0, 
+                        timerInterval: null, 
+                        startTime: Date.now() 
+                    };
+                    showView('quiz-view');
+                    renderQuiz();
+                } catch (error) {
+                    console.error("Full exam generation failed:", error);
+                    alert("Failed to generate the full exam. Please try again later.");
+                    showView('landing-view');
+                }
+            }
+
+            function handleFullExamClick(e) {
+                const paperId = e.currentTarget.dataset.paper;
+                if (paperId === '1') {
+                    handleStartFullExam(paperId);
+                } else if (paperId === '2') {
+                    appState.quiz.paperId = paperId; // Temporarily store paperId
+                    const modal = document.getElementById('paper2-stream-modal');
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                }
+            }
+
+            function handleStreamChoice(e) {
+                 const stream = e.currentTarget.dataset.stream;
+                 const paperId = appState.quiz.paperId;
+                 const modal = document.getElementById('paper2-stream-modal');
+                 modal.classList.add('hidden');
+                 modal.classList.remove('flex');
+                 handleStartFullExam(paperId, stream);
+            }
+            
+            async function handleStartTopicPracticeQuiz(e) {
+                const topic = e.target.dataset.topic;
+                const subject = appState.selectedSubject;
+                const numQuestions = 15;
+
+                const prompt = `Generate ${numQuestions} multiple-choice questions for the CTET ${appState.selectedPaper.name} exam, focusing specifically on the topic "${topic}" from the subject "${subject.name}". Provide the response as a valid JSON array where each object has "question" (string), "options" (an array of 4 strings), "answer" (the 0-indexed integer of the correct option), and "explanation" (a brief string). Do not include any text outside the JSON array.`;
+
+                showView('loader-view', { text: `Generating your practice set...` });
+                
+                try {
+                    const responseText = await fetchGeminiContent(prompt);
+                    const questions = JSON.parse(responseText).map(q => ({...q, userAnswer: null}));
+                    
+                    appState.quiz = { 
+                        type: 'topic-practice', 
+                        topic: topic,
+                        questions, 
+                        currentQIndex: 0, 
+                        score: 0, 
+                        timerInterval: null, 
+                        startTime: Date.now() 
+                    };
+                    showView('quiz-view');
+                    renderQuiz();
+                } catch (error) {
+                    console.error("Practice Quiz generation failed:", error);
+                    alert("Failed to generate the practice set. Please try again.");
+                    showView('subject-view', { subjectId: subject.id });
+                }
+            }
+
+            async function handleLoadTopicTheory(topic) {
+                const subject = appState.selectedSubject;
+                const container = document.getElementById('theory-content-container');
+                container.innerHTML = `<div class="flex justify-center items-center p-8"><div class="loader"></div></div>`;
+                
+                const prompt = `Generate detailed theory notes for the CTET exam on the specific topic '${topic}' from the subject '${subject.name}'. The notes should be comprehensive, well-structured, and easy to understand for an aspiring teacher. Use markdown for formatting, including headings (e.g., ## Key Concept), bold text for keywords, and bulleted lists for important points.`;
+                
+                try {
+                    const responseText = await fetchGeminiContent(prompt, false);
+                    container.innerHTML = parseMarkdown(responseText);
+                } catch (error) {
+                    console.error("Theory generation failed:", error);
+                    container.innerHTML = `<p class="text-red-500">Failed to load theory notes for this topic. Please try again.</p>`;
+                }
+            }
+            
+            function handleOptionSelect(e) {
+                const optionBtn = e.target.closest('.option-btn');
+                if (!optionBtn || optionBtn.parentElement.classList.contains('answered')) return;
+                
+                optionBtn.parentElement.classList.add('answered');
+                const selectedIndex = parseInt(optionBtn.dataset.index);
+                const correctIndex = appState.quiz.questions[appState.quiz.currentQIndex].answer;
+                appState.quiz.questions[appState.quiz.currentQIndex].userAnswer = selectedIndex;
+
+                optionBtn.classList.add('selected');
+                if (selectedIndex === correctIndex) {
+                    appState.quiz.score++;
+                    playSound('correct');
+                    optionBtn.classList.add('correct');
+                } else {
+                    playSound('wrong');
+                    optionBtn.classList.add('wrong');
+                    document.querySelector(`.option-btn[data-index='${correctIndex}']`).classList.add('correct');
+                }
+
+                document.getElementById('explanation-text').innerHTML = appState.quiz.questions[appState.quiz.currentQIndex].explanation;
+                document.getElementById('quiz-feedback').classList.remove('hidden');
+                document.getElementById('next-question-btn').disabled = false;
+                document.getElementById('quiz-score').textContent = `Score: ${appState.quiz.score}`;
+            }
+            
+            function handleNextQuestion() {
+                if (appState.quiz.currentQIndex < appState.quiz.questions.length - 1) {
+                    appState.quiz.currentQIndex++;
+                    renderQuizQuestion();
+                } else {
+                    endQuiz();
+                }
+            }
+            
+            function handleQuitQuiz() {
+                const quitModal = document.getElementById('quit-confirm-modal');
+                quitModal.classList.remove('hidden');
+                quitModal.classList.add('flex');
+            }
+
+            function renderRoadmap(paper) {
+                document.getElementById('roadmap-title').textContent = paper.name;
+                const container = document.getElementById('subject-cards-container');
+                container.innerHTML = '';
+                paper.subjects.forEach(subject => {
+                    const progress = getSubjectProgress(paper.id, subject.id);
+                    const card = document.createElement('div');
+                    card.className = 'card p-6 cursor-pointer';
+                    card.dataset.subjectId = subject.id;
+                    card.innerHTML = `<h3 class="text-xl font-bold mb-2 text-slate-800">${subject.name}</h3><p class="text-sm text-slate-500 mb-4">${subject.questions} Questions</p><div class="progress-bar-bg w-full h-2.5 rounded-full"><div class="progress-bar-fill h-2.5 rounded-full" style="width: ${progress.percentage}%;"></div></div><p class="text-xs text-right mt-1 text-slate-500">${progress.completed}/${progress.total} topics</p>`;
+                    card.addEventListener('click', handleSubjectSelect);
+                    container.appendChild(card);
+                });
+            }
+            
+            function renderSubjectView(subjectId) {
+                const subject = appState.selectedPaper.subjects.find(s => s.id === subjectId);
+                appState.selectedSubject = subject;
+                document.getElementById('subject-title').textContent = subject.name;
+                document.querySelector('#subject-tabs .tab-btn[data-tab="theory"]').click();
+            }
+
+            function renderTabContent(tab) {
+                const container = document.getElementById('subject-tab-content');
+                if (tab === 'theory') {
+                    const roadmapHtml = appState.selectedSubject.roadmap.map(item => {
+                        if (item.type === 'header') {
+                            return `<h3 class="text-lg font-bold mt-6 mb-3 text-blue-700">${item.title}</h3>`;
+                        }
+                        if (item.type === 'link') {
+                            return `<a href="${item.url}" target="_blank" rel="noopener noreferrer" class="inline-block w-full text-left p-3 my-1 bg-green-100 text-green-800 hover:bg-green-200 rounded-lg transition font-semibold">${item.text} ↗</a>`;
+                        }
+                        if (item.type === 'topic') {
+                            return `<div class="topic-item p-4 my-2 bg-slate-100 rounded-lg">
+                                        <p class="font-medium text-slate-800">${item.title}</p>
+                                        <div class="flex gap-2 mt-3">
+                                            <button class="topic-theory-btn flex-1 text-xs font-semibold bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-md py-2 px-1 transition-colors" data-topic="${item.title}">Read Theory</button>
+                                            <button class="topic-practice-btn flex-1 text-xs font-semibold bg-teal-100 text-teal-700 hover:bg-teal-200 rounded-md py-2 px-1 transition-colors" data-topic="${item.title}">Practice Set</button>
+                                        </div>
+                                    </div>`;
+                        }
+                        return '';
+                    }).join('');
+                    
+                    container.innerHTML = `
+                        <div class="grid md:grid-cols-3 gap-8">
+                            <div class="md:col-span-1">
+                                <h2 class="text-2xl font-bold mb-4 tracking-tight">Study Roadmap</h2>
+                                <div class="space-y-1">${roadmapHtml}</div>
+                            </div>
+                            <div class="md:col-span-2">
+                                 <h2 class="text-2xl font-bold mb-4 tracking-tight">Generated Notes</h2>
+                                <div id="theory-content-container" class="p-6 bg-slate-50 rounded-xl min-h-[300px] border border-slate-200">
+                                    <p class="text-slate-500">Select a topic from the roadmap to generate detailed notes here.</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.querySelectorAll('.topic-theory-btn').forEach(btn => btn.addEventListener('click', (e) => handleLoadTopicTheory(e.target.dataset.topic)));
+                    document.querySelectorAll('.topic-practice-btn').forEach(btn => btn.addEventListener('click', handleStartTopicPracticeQuiz));
+                } else if (tab === 'mock') {
+                    container.innerHTML = `<h3 class="text-2xl font-bold mb-4 tracking-tight">Mock Test (30 Questions)</h3><p class="text-slate-600 mb-8 max-w-prose">Simulate the real exam with a timed mock test for ${appState.selectedSubject.name}. You can always generate a new, unique test.</p><div class="flex flex-wrap gap-4"><button id="start-mock-btn" class="btn-secondary font-bold py-3 px-8 rounded-lg">Start Mock Test</button><button id="regen-mock-btn" class="bg-slate-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-slate-700 transition-colors">Generate New Test</button></div>`;
+                    document.getElementById('start-mock-btn').addEventListener('click', () => handleStartQuiz('mock'));
+                    document.getElementById('regen-mock-btn').addEventListener('click', () => handleStartQuiz('mock'));
+                }
+            }
+            
+            function renderQuiz() {
+                const quiz = appState.quiz;
+                let title = '';
+                if (quiz.type === 'mock') {
+                    title = `Mock Test: ${appState.selectedSubject.name}`;
+                } else if (quiz.type === 'topic-practice') {
+                    title = `Practice Set: ${quiz.topic}`;
+                } else if (quiz.type === 'full-exam') {
+                    title = `Full Exam: ${examData[quiz.paperId].name}`;
+                }
+                document.getElementById('quiz-title').textContent = title;
+                document.getElementById('quiz-score').textContent = `Score: 0`;
+                window.addEventListener('beforeunload', handleBeforeUnload);
+                startTimer();
+                renderQuizQuestion();
+            }
+
+            function renderQuizQuestion() {
+                const quiz = appState.quiz;
+                const question = quiz.questions[quiz.currentQIndex];
+                
+                document.getElementById('question-counter').textContent = `Question ${quiz.currentQIndex + 1} of ${quiz.questions.length}`;
+                document.getElementById('question-text').textContent = question.question;
+                
+                const optionsContainer = document.getElementById('options-container');
+                optionsContainer.innerHTML = '';
+                optionsContainer.classList.remove('answered');
+                
+                question.options.forEach((option, index) => {
+                    const button = document.createElement('button');
+                    button.className = "option-btn w-full p-4 text-left rounded-xl font-medium";
+                    button.dataset.index = index;
+                    button.textContent = option;
+                    optionsContainer.appendChild(button);
+                });
+                
+                document.getElementById('quiz-feedback').classList.add('hidden');
+                const nextBtn = document.getElementById('next-question-btn');
+                nextBtn.disabled = true;
+                nextBtn.textContent = (quiz.currentQIndex === quiz.questions.length - 1) ? 'Finish' : 'Next';
+            }
+            
+            function handleRetakeSameQuiz() {
+                appState.quiz.questions.forEach(q => q.userAnswer = null);
+                appState.quiz.currentQIndex = 0;
+                appState.quiz.score = 0;
+                appState.quiz.startTime = Date.now();
+                appState.quiz.timerInterval = null; 
+                
+                showView('quiz-view');
+                renderQuiz();
+            }
+
+            function renderResults() {
+                const quiz = appState.quiz;
+                const totalQuestions = quiz.questions.length;
+                const accuracy = totalQuestions > 0 ? Math.round((quiz.score / totalQuestions) * 100) : 0;
+                
+                document.getElementById('result-score').textContent = `${quiz.score}/${totalQuestions}`;
+                document.getElementById('result-accuracy').textContent = `${accuracy}%`;
+                document.getElementById('result-time').textContent = formatTime(quiz.totalTime);
+                
+                document.getElementById('generate-new-quiz-btn').onclick = () => {
+                    if (appState.quiz.type === 'mock') {
+                        handleStartQuiz('mock');
+                    } else if (appState.quiz.type === 'topic-practice') {
+                        const dummyEvent = { target: { dataset: { topic: appState.quiz.topic } } };
+                        handleStartTopicPracticeQuiz(dummyEvent);
+                    } else if (appState.quiz.type === 'full-exam') {
+                        // For full exams, directly regenerate without showing the modal again if stream is known
+                        handleStartFullExam(appState.quiz.paperId, appState.quiz.stream);
+                    }
+                };
+                
+                const backBtn = document.getElementById('back-to-subject-btn');
+                backBtn.textContent = appState.quiz.type === 'full-exam' ? 'Back to Home' : 'Back to Subject';
+
+                document.getElementById('retake-same-quiz-btn').onclick = handleRetakeSameQuiz;
+                document.getElementById('download-results-btn').onclick = handleDownloadPdf;
+
+                showView('results-view');
+            }
+            
+            function startTimer() {
+                clearInterval(appState.quiz.timerInterval);
+                const timerEl = document.getElementById('quiz-timer');
+                let timeValue;
+                
+                if (appState.quiz.type === 'mock') {
+                    timeValue = 30 * 60; // 30 mins
+                } else if (appState.quiz.type === 'topic-practice') {
+                    timeValue = 15 * 60; // 15 minutes
+                } else if (appState.quiz.type === 'full-exam') {
+                    timeValue = 150 * 60; // 150 minutes
+                }
+
+                appState.quiz.timerInterval = setInterval(() => {
+                    if(timeValue > 0) {
+                        timeValue--;
+                        timerEl.textContent = formatTime(timeValue);
+                    } else {
+                        alert("Time's up!");
+                        endQuiz();
+                    }
+                }, 1000);
+                
+                timerEl.textContent = formatTime(timeValue);
+            }
+
+            function endQuiz(wasQuit = false) {
+                clearInterval(appState.quiz.timerInterval);
+                window.removeEventListener('beforeunload', handleBeforeUnload);
+                appState.quiz.totalTime = Math.round((Date.now() - appState.quiz.startTime) / 1000);
+                
+                if (wasQuit) {
+                    if (appState.quiz.type === 'full-exam') {
+                        showView('landing-view');
+                    } else {
+                         showView('subject-view', { subjectId: appState.selectedSubject.id });
+                    }
+                    return;
+                }
+                updateProgress();
+                renderResults();
+            }
+            
+            function updateProgress() {
+                if (appState.quiz.type === 'full-exam') return; // Don't track progress for full exams for now
+                const paperId = appState.selectedPaper.id;
+                const subjectId = appState.selectedSubject.id;
+                if (!appState.progress[paperId]) appState.progress[paperId] = {};
+                if (!appState.progress[paperId][subjectId]) appState.progress[paperId][subjectId] = [];
+                
+                appState.progress[paperId][subjectId].push({ score: appState.quiz.score, total: appState.quiz.questions.length, type: appState.quiz.type, date: new Date().toISOString() });
+                localStorage.setItem('ctetProProgress', JSON.stringify(appState.progress));
+            }
+            
+            function getSubjectProgress(paperId, subjectId) {
+                const subjectProgress = appState.progress[paperId]?.[subjectId] || [];
+                const completedCount = subjectProgress.filter(p => p.type === 'mock').length;
+                return { completed: completedCount, total: 1, percentage: completedCount * 100 };
+            }
+
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const secs = (seconds % 60).toString().padStart(2, '0');
+                return `${mins}:${secs}`;
+            }
+
+            function parseMarkdown(text) {
+                return text
+                    .replace(/## (.*)/g, '<h2>$1</h2>')
+                    .replace(/### (.*)/g, '<h3>$1</h3>')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\* (.*)/g, '<ul><li>$1</li></ul>')
+                    .replace(/<\/ul>\n<ul>/g, '')
+                    .replace(/\n/g, '<br>');
+            }
+
+            function handleDownloadPdf() {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                const quiz = appState.quiz;
+                const title = quiz.type === 'full-exam' 
+                    ? `Full Exam: ${examData[quiz.paperId].name}`
+                    : `Quiz Results: ${appState.selectedSubject.name}`;
+                
+                let y = 15;
+                const pageHeight = doc.internal.pageSize.height;
+                const margin = 10;
+
+                const addText = (text, x, isBold = false, size = 10) => {
+                    const splitText = doc.splitTextToSize(text, 180);
+                    let textHeight = doc.getTextDimensions(splitText).h;
+                    if (Array.isArray(splitText)) {
+                        textHeight = splitText.length * (size * 0.352778) * 1.15;
+                    }
+
+                    if (y + textHeight > pageHeight - margin) {
+                        doc.addPage();
+                        y = margin;
+                    }
+                    doc.setFont(undefined, isBold ? 'bold' : 'normal');
+                    doc.setFontSize(size);
+                    doc.text(splitText, x, y);
+                    y += textHeight + 4;
+                };
+
+                addText(title, margin, true, 16);
+                y += 5;
+                addText(`Final Score: ${quiz.score}/${quiz.questions.length}`, margin);
+                addText(`Accuracy: ${Math.round((quiz.score / quiz.questions.length) * 100)}%`, margin);
+                y += 10;
+
+                quiz.questions.forEach((q, index) => {
+                    addText(`Q${index + 1}: ${q.question}`, margin, true, 12);
+                    
+                    q.options.forEach((opt, optIndex) => {
+                        let prefix = '';
+                        let fullText = `  • ${opt}`;
+                        if (optIndex === q.answer) prefix += ' (Correct Answer)';
+                        if (optIndex === q.userAnswer && q.userAnswer !== q.answer) prefix += ' (Your Answer)';
+                        else if (optIndex === q.userAnswer) prefix += ' (Your Answer)';
+                        
+                        let finalColor = '#000000';
+                        if (optIndex === q.answer) finalColor = '#065f46'; // green
+                        if (optIndex === q.userAnswer && q.userAnswer !== q.answer) finalColor = '#991b1b'; // red
+
+                        doc.setTextColor(finalColor);
+                        addText(fullText + prefix, margin + 5);
+                        doc.setTextColor('#000000');
+                    });
+                    y += 3;
+                    doc.setFont(undefined, 'bold');
+                    addText('Explanation:', margin, true);
+                    doc.setFont(undefined, 'normal');
+                    addText(q.explanation, margin + 5);
+                    y += 10;
+                });
+
+                const fileName = quiz.type === 'full-exam' ? `CTET-Pro-Full-Exam-${quiz.paperId}.pdf` : `CTET-Pro-Results-${appState.selectedSubject.id}.pdf`;
+                doc.save(fileName);
+            }
+
+            async function fetchGeminiContent(prompt, isJson = true) {
+                const maxRetries = 3;
+                let delay = 1000; // start with 1 second
+
+                for (let i = 0; i < maxRetries; i++) {
+                    const payload = {
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: isJson ? { responseMimeType: "application/json" } : {}
+                    };
+                    try {
+                        const response = await fetch(API_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (response.status === 503 && i < maxRetries - 1) {
+                            console.warn(`API returned 503. Retrying in ${delay / 1000}s...`);
+                            await new Promise(res => setTimeout(res, delay));
+                            delay *= 2; // Exponential backoff
+                            continue; // Go to the next iteration of the loop
+                        }
+
+                        if (!response.ok) {
+                            throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                        }
+                        
+                        const data = await response.json();
+                        const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (!responseText) {
+                            throw new Error("Invalid API response structure or empty content.");
+                        }
+                        return responseText; // Success, exit the function
+
+                    } catch(error) {
+                         if (i < maxRetries - 1) {
+                            console.warn(`Fetch Gemini Content Error (Attempt ${i + 1}/${maxRetries}). Retrying in ${delay / 1000}s...`);
+                            await new Promise(res => setTimeout(res, delay));
+                            delay *= 2;
+                        } else {
+                            console.error(`Fetch Gemini Content Error (Attempt ${i + 1}/${maxRetries}):`, error);
+                            throw error;
+                        }
+                    }
+                }
+                throw new Error("API request failed after multiple retries.");
+            }
+        });
+    </script>
+</body>
+</html>
+
